@@ -1,5 +1,6 @@
 package com.pgb.profile.service;
 
+import com.pgb.profile.config.ServiceConfigurations;
 import com.pgb.profile.data.Profile;
 import com.pgb.profile.data.couchbase.ReactiveProfileRepository;
 import com.pgb.profile.data.dto.ContactDTO;
@@ -19,11 +20,13 @@ import java.util.UUID;
 @Slf4j
 public class ProfileService {
     private final ReactiveProfileRepository profileRepository;
-    private final WebClient.Builder loadBalancedWebClientBuilder;
+    private final WebClient.Builder webClient;
+    private final ServiceConfigurations configurations;
 
-    public ProfileService(ReactiveProfileRepository profileRepository, WebClient.Builder loadBalancedWebClientBuilder) {
+    public ProfileService(ReactiveProfileRepository profileRepository, WebClient.Builder webClient, ServiceConfigurations configurations) {
         this.profileRepository = profileRepository;
-        this.loadBalancedWebClientBuilder = loadBalancedWebClientBuilder;
+        this.webClient = webClient;
+        this.configurations = configurations;
     }
     // private final ReactorLoadBalancerExchangeFilterFunction lbFunction;
 
@@ -55,11 +58,11 @@ public class ProfileService {
 
 
     private Mono<ResponseEntity<Void>> postIdentity(CreateProfileDTO profileDTO) {
-        return loadBalancedWebClientBuilder
+        return webClient
                 //.filter(lbFunction)
                 .build()
                 .post()
-                .uri("http://identity/contacts")
+                .uri(configurations.API_IDENTITY_SIGNUP_HOST+configurations.API_IDENTITY_SIGNUP_ENDPOINT)
                 .body(Mono.just(profileDTO.getContactDTO()),ContactDTO.class)
                 .retrieve()
                 .onStatus(HttpStatus::is5xxServerError,clientResponse ->{
